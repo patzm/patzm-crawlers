@@ -15,7 +15,7 @@ from selenium.webdriver.support import expected_conditions, wait
 class LinkedInProvider:
     def __init__(self, config_dir: str, cache_dir: str):
         self.driver = webdriver.Firefox()
-        self.driver.get("https://linkedin.com/")
+        self.driver.get("https://www.linkedin.com/")
 
         self._config_dir = config_dir
         self._cache_dir = cache_dir
@@ -39,7 +39,7 @@ class LinkedInProvider:
         self._username_pattern = re.compile(r"https://www\.linkedin\.com/in/([^/]+)/?")
 
     def login(self, credentials: configparser.ConfigParser):
-        self.driver.get("https://linkedin.com/login")
+        self.driver.get("https://www.linkedin.com/login")
 
         username_field = self.driver.find_element(by=By.ID, value="username")
         username_field.clear()
