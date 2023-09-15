@@ -25,6 +25,7 @@ class LinkedInProvider:
         if os.path.exists(cookies_file):
             self._load_cookies(cookies_file)
             self.driver.get("https://www.linkedin.com/mynetwork/")
+            self.wait_for(By.CLASS_NAME, "mn-community-summary")
             login_required = self.driver.current_url != "https://www.linkedin.com/mynetwork/"
 
         if login_required:
