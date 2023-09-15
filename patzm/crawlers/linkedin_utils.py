@@ -1,4 +1,5 @@
 import configparser
+import getpass
 import os
 import pickle
 import re
@@ -13,7 +14,24 @@ from selenium.webdriver.support import expected_conditions, wait
 
 
 class LinkedInProvider:
-    def __init__(self, config_dir: str, cache_dir: str):
+    def __init__(self, config_dir: str, cache_dir: str, login: Optional[str] = None):
+        """A selenium-based interface to browse LinkedIn.
+
+        Parameters
+        ----------
+        config_dir
+            A path to the configuration files.
+        cache_dir
+            A path to the cache files.
+        login, optional
+            Configures the login behavior. Options are:
+
+            - ``None``: uses cookies 🍪.
+            - An empty string: the user will be prompted for the login credentials. This is the most secure way.
+              After that, cookies 🍪 can be used.
+            - A path to a credentials file: reads the credentials from this file. If it doesn't exist, a template
+              empty file gets created. After that, cookies 🍪 can be used.
+        """
         self.driver = webdriver.Firefox()
         self.driver.get("https://www.linkedin.com/")
 
@@ -21,15 +39,15 @@ class LinkedInProvider:
         self._cache_dir = cache_dir
 
         cookies_file = os.path.join(cache_dir, "linkedin_cookies.pkl")
-        login_required = True
-        if os.path.exists(cookies_file):
+        use_cookies = login is None
+        if os.path.exists(cookies_file) and use_cookies:
             self._load_cookies(cookies_file)
             self.driver.get("https://www.linkedin.com/mynetwork/")
             self.wait_for(By.CLASS_NAME, "mn-community-summary")
-            login_required = self.driver.current_url != "https://www.linkedin.com/mynetwork/"
+            use_cookies = self.driver.current_url != "https://www.linkedin.com/mynetwork/"
 
-        if login_required:
-            credentials = self._get_login_credentials()
+        if not use_cookies:
+            credentials = self._get_login_credentials(login)
             self.login(credentials)
             self._save_cookies(cookies_file)
 
@@ -59,24 +77,33 @@ class LinkedInProvider:
         if self.driver.current_url == "https://www.linkedin.com/check/manage-account":
             raise NotImplementedError(f"The account management dialog isn't implemented. Please manually approve it.")
 
-    def _get_login_credentials(self, credentials_file_path: Optional[str] = None) -> configparser.ConfigParser:
-        if not credentials_file_path:
-            credentials_file_path = os.path.join(self._config_dir, "credentials.ini")
-
-        credentials = configparser.ConfigParser()
-        if not os.path.exists(credentials_file_path):
+    def _get_login_credentials(self, login: Optional[str] = None) -> configparser.ConfigParser:
+        def _get_config_parser(username: str, password: str) -> configparser.ConfigParser:
+            credentials = configparser.ConfigParser()
             credentials["linkedin"] = {}
-            credentials["linkedin"]["username"] = "your@email.com"
-            credentials["linkedin"]["password"] = "your-password"
-
-            with open(credentials_file_path, "w") as credentials_file:
-                credentials.write(credentials_file)
-
-            print(f"The template credentials file has been written to {credentials_file_path}. Fill it.")
-            exit(0)
-        else:
-            credentials.read(credentials_file_path)
+            credentials["linkedin"]["username"] = username
+            credentials["linkedin"]["password"] = password
             return credentials
+
+        if login == "":
+            username = input("Provide your LinkedIn username:")
+            password = getpass.getpass("Provide your LinkedIn password:")
+            return _get_config_parser(username, password)
+        else:
+            if login is None:
+                login = os.path.join(self._config_dir, "credentials.ini")
+
+            if not os.path.exists(login):
+                credentials = _get_config_parser("your@email.com", "your-password")
+                with open(login, "w") as credentials_file:
+                    credentials.write(credentials_file)
+
+                print(f"The template credentials file has been written to {login}. Fill it.")
+                exit(0)
+            else:
+                credentials = configparser.ConfigParser()
+                credentials.read(login)
+                return credentials
 
     def _load_cookies(self, cookies_file: str):
         with open(cookies_file, "rb") as file:
