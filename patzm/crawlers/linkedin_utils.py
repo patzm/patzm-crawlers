@@ -23,18 +23,14 @@ class LinkedInProvider:
         cookies_file = os.path.join(cache_dir, "linkedin_cookies.pkl")
         login_required = True
         if os.path.exists(cookies_file):
-            with open(cookies_file, "rb") as file:
-                cookies = pickle.load(file)
-                for cookie in cookies:
-                    self.driver.add_cookie(cookie)
+            self._load_cookies(cookies_file)
             self.driver.get("https://www.linkedin.com/mynetwork/")
             login_required = self.driver.current_url != "https://www.linkedin.com/mynetwork/"
 
         if login_required:
             credentials = self._get_login_credentials()
             self.login(credentials)
-            with open(cookies_file, "wb") as file:
-                pickle.dump(self.driver.get_cookies(), file)
+            self._save_cookies(cookies_file)
 
         self._username_pattern = re.compile(r"https://www\.linkedin\.com/in/([^/]+)/?")
 
@@ -58,7 +54,7 @@ class LinkedInProvider:
     def _get_login_credentials(self, credentials_file_path: Optional[str] = None) -> configparser.ConfigParser:
         if not credentials_file_path:
             credentials_file_path = os.path.join(self._config_dir, "credentials.ini")
-        
+
         credentials = configparser.ConfigParser()
         if not os.path.exists(credentials_file_path):
             credentials["linkedin"] = {}
@@ -73,6 +69,16 @@ class LinkedInProvider:
         else:
             credentials.read(credentials_file_path)
             return credentials
+
+    def _load_cookies(self, cookies_file: str):
+        with open(cookies_file, "rb") as file:
+            cookies = pickle.load(file)
+            for cookie in cookies:
+                self.driver.add_cookie(cookie)
+
+    def _save_cookies(self, cookies_file: str):
+        with open(cookies_file, "wb") as file:
+            pickle.dump(self.driver.get_cookies(), file)
 
     def __del__(self):
         self.driver.close()
