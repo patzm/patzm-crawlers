@@ -53,6 +53,9 @@ class LinkedInProvider:
         login_button = self.driver.find_element(by=By.CSS_SELECTOR, value="[type='submit']")
         login_button.click()
 
+        while "https://www.linkedin.com/checkpoint" in self.driver.current_url:
+            input(f"User authenticity validation required. Please press enter when done.")
+
         if self.driver.current_url == "https://www.linkedin.com/check/manage-account":
             raise NotImplementedError(f"The account management dialog isn't implemented. Please manually approve it.")
 
