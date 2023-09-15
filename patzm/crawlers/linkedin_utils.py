@@ -35,6 +35,10 @@ class LinkedInProvider:
 
         self._username_pattern = re.compile(r"https://www\.linkedin\.com/in/([^/]+)/?")
 
+    def __del__(self):
+        self.driver.close()
+        self.driver.quit()
+
     def login(self, credentials: configparser.ConfigParser):
         self.driver.get("https://www.linkedin.com/login")
 
@@ -80,9 +84,6 @@ class LinkedInProvider:
     def _save_cookies(self, cookies_file: str):
         with open(cookies_file, "wb") as file:
             pickle.dump(self.driver.get_cookies(), file)
-
-    def __del__(self):
-        self.driver.close()
 
     def get_username_from_url(self, url: str) -> Optional[str]:
         match = self._username_pattern.search(url)
