@@ -55,8 +55,10 @@ class LinkedInProvider:
         if self.driver.current_url == "https://www.linkedin.com/check/manage-account":
             raise NotImplementedError(f"The account management dialog isn't implemented. Please manually approve it.")
 
-    def _get_login_credentials(self) -> configparser.ConfigParser:
-        credentials_file_path = os.path.join(self._config_dir, "credentials.ini")
+    def _get_login_credentials(self, credentials_file_path: Optional[str] = None) -> configparser.ConfigParser:
+        if not credentials_file_path:
+            credentials_file_path = os.path.join(self._config_dir, "credentials.ini")
+        
         credentials = configparser.ConfigParser()
         if not os.path.exists(credentials_file_path):
             credentials["linkedin"] = {}
