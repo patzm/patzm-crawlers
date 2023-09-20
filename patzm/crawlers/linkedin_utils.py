@@ -167,7 +167,7 @@ class Company(BaseModel):
 
 
 def search_company(li_provider: LinkedInProvider, name: str) -> List[Company]:
-    url = f"https://www.linkedin.com/search/results/companies/?" f"keywords={name}"
+    url = f"https://www.linkedin.com/search/results/companies/?keywords={name}"
     li_provider.driver.get(url=url)
     if not li_provider.wait_for(by=By.CLASS_NAME, value="entity-result__title-text"):
         return list()
