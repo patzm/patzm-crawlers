@@ -98,7 +98,7 @@ class LinkedInProvider:
             input(f"User authenticity validation required. Please press enter when done.")
 
         if self.driver.current_url == "https://www.linkedin.com/check/manage-account":
-            raise NotImplementedError(f"The account management dialog isn't implemented. Please manually approve it.")
+            input(f"The account management dialog isn't implemented. Please manually approve it.")
         
     def validate_login(self) -> bool:
         self.driver.get("https://www.linkedin.com/mynetwork/")
