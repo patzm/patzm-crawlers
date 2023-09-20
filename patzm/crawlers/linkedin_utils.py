@@ -14,7 +14,7 @@ from selenium.webdriver.support import expected_conditions, wait
 
 
 class LinkedInProvider:
-    def __init__(self, config_dir: str, cache_dir: str, login: Optional[str] = None):
+    def __init__(self, config_dir: str, cache_dir: str, login: Optional[str] = None, headless: bool = True):
         """A selenium-based interface to browse LinkedIn.
 
         Parameters
@@ -31,34 +31,53 @@ class LinkedInProvider:
               After that, cookies 🍪 can be used.
             - A path to a credentials file: reads the credentials from this file. If it doesn't exist, a template
               empty file gets created. After that, cookies 🍪 can be used.
+        headless
+            Whether the web browser window (Firefox) is headless (no GUI).
         """
-        self.driver = webdriver.Firefox()
+        self.driver = None
+        
+        firefox_options = webdriver.FirefoxOptions()
+        if headless:
+            firefox_options.add_argument("-headless")
+        self.driver = webdriver.Firefox(options=firefox_options)
         self.driver.get("https://www.linkedin.com/")
 
         self._config_dir = config_dir
         self._cache_dir = cache_dir
-
-        cookies_file = os.path.join(cache_dir, "linkedin_cookies.pkl")
-        use_cookies = login is None
-        if os.path.exists(cookies_file) and use_cookies:
-            self._load_cookies(cookies_file)
-            self.driver.get("https://www.linkedin.com/mynetwork/")
-            self.wait_for(By.CLASS_NAME, "mn-community-summary")
-            use_cookies = self.driver.current_url != "https://www.linkedin.com/mynetwork/"
-
-        if not use_cookies:
-            credentials = self._get_login_credentials(login)
-            self.login(credentials)
-            self._save_cookies(cookies_file)
-
         self._username_pattern = re.compile(r"https://www\.linkedin\.com/in/([^/]+)/?")
 
+        if self.activate_session(login):
+            print("Login / session activation successful 🎉")
+        else:
+            raise RuntimeError("Login to LinkedIn unsuccessful 😔")
+    def activate_session(self, login: str) -> bool:
+        cookies_file = os.path.join(self._cache_dir, "linkedin_cookies.pkl")
+        use_cookies = login is None and os.path.exists(cookies_file)
+        if use_cookies:
+            self._load_cookies(cookies_file)
+            if self.validate_login():
+                return True
+
+        credentials = self._get_login_credentials(login)
+        self.login(credentials)
+        if self.validate_login():
+            self._save_cookies(cookies_file)
+            return True
+        else:
+            return False
+
+    def close(self):
+        if self.driver is not None:
     def __del__(self):
         self.driver.close()
         self.driver.quit()
-
+        
     def login(self, credentials: configparser.ConfigParser):
-        self.driver.get("https://www.linkedin.com/login")
+        login_url = "https://www.linkedin.com/login"
+        self.driver.get(login_url)
+        if self.driver.current_url != login_url and self.validate_login():
+            print("Already logged in 🙄")
+            return
 
         username_field = self.driver.find_element(by=By.ID, value="username")
         username_field.clear()
@@ -76,6 +95,12 @@ class LinkedInProvider:
 
         if self.driver.current_url == "https://www.linkedin.com/check/manage-account":
             raise NotImplementedError(f"The account management dialog isn't implemented. Please manually approve it.")
+        
+    def validate_login(self) -> bool:
+        self.driver.get("https://www.linkedin.com/mynetwork/")
+        self.wait_for(By.CLASS_NAME, "mn-community-summary")
+        success = self.driver.current_url == "https://www.linkedin.com/mynetwork/"
+        return success
 
     def _get_login_credentials(self, login: Optional[str] = None) -> configparser.ConfigParser:
         def _get_config_parser(username: str, password: str) -> configparser.ConfigParser:
