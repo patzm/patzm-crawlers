@@ -50,6 +50,10 @@ class LinkedInProvider:
             print("Login / session activation successful 🎉")
         else:
             raise RuntimeError("Login to LinkedIn unsuccessful 😔")
+
+    def __del__(self):
+        self.close()
+
     def activate_session(self, login: str) -> bool:
         cookies_file = os.path.join(self._cache_dir, "linkedin_cookies.pkl")
         use_cookies = login is None and os.path.exists(cookies_file)
@@ -68,9 +72,9 @@ class LinkedInProvider:
 
     def close(self):
         if self.driver is not None:
-    def __del__(self):
-        self.driver.close()
-        self.driver.quit()
+            self.driver.close()
+            self.driver.quit()
+            self.driver = None
         
     def login(self, credentials: configparser.ConfigParser):
         login_url = "https://www.linkedin.com/login"
