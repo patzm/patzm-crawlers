@@ -54,7 +54,6 @@ class LinkedInProvider:
     
     def open(self):
         self.driver = webdriver.Firefox(options=self._firefox_options)
-        self.driver.get("https://www.linkedin.com/")
 
         if self.activate_session(self._login):
             print("Login / session activation successful 🎉")
