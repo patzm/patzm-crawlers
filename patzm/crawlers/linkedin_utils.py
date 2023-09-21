@@ -141,6 +141,8 @@ class LinkedInProvider:
                 return credentials
 
     def _load_cookies(self, cookies_file: str):
+        self.driver.get("https://www.linkedin.com/")
+
         with open(cookies_file, "rb") as file:
             cookies = pickle.load(file)
             for cookie in cookies:
