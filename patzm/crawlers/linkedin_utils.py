@@ -47,12 +47,12 @@ class LinkedInProvider:
         self._cache_dir = cache_dir
         self._username_pattern = re.compile(r"https://www\.linkedin\.com/in/([^/]+)/?")
         if open_session:
-            self.open()
+            self.open_session()
 
     def __del__(self):
-        self.close()
+        self.close_session()
     
-    def open(self):
+    def open_session(self):
         self.driver = webdriver.Firefox(options=self._firefox_options)
 
         if self.activate_session(self._login):
@@ -76,7 +76,7 @@ class LinkedInProvider:
         else:
             return False
 
-    def close(self):
+    def close_session(self):
         if self.driver is not None:
             self.driver.close()
             self.driver.quit()
