@@ -14,7 +14,7 @@ from selenium.webdriver.support import expected_conditions, wait
 
 
 class LinkedInProvider:
-    def __init__(self, config_dir: str, cache_dir: str, login: Optional[str] = None, headless: bool = True):
+    def __init__(self, config_dir: str, cache_dir: str, login: Optional[str] = None, headless: bool = True, open_session: bool = True):
         """A selenium-based interface to browse LinkedIn.
 
         Parameters
@@ -33,26 +33,33 @@ class LinkedInProvider:
               empty file gets created. After that, cookies 🍪 can be used.
         headless
             Whether the web browser window (Firefox) is headless (no GUI).
+        open_session
+            Whether to directly open a session or not.
         """
         self.driver = None
         
-        firefox_options = webdriver.FirefoxOptions()
+        self._login = login
+        self._firefox_options = webdriver.FirefoxOptions()
         if headless:
-            firefox_options.add_argument("-headless")
-        self.driver = webdriver.Firefox(options=firefox_options)
-        self.driver.get("https://www.linkedin.com/")
+            self._firefox_options.add_argument("-headless")
 
         self._config_dir = config_dir
         self._cache_dir = cache_dir
         self._username_pattern = re.compile(r"https://www\.linkedin\.com/in/([^/]+)/?")
-
-        if self.activate_session(login):
-            print("Login / session activation successful 🎉")
-        else:
-            raise RuntimeError("Login to LinkedIn unsuccessful 😔")
+        if open_session:
+            self.open()
 
     def __del__(self):
         self.close()
+    
+    def open(self):
+        self.driver = webdriver.Firefox(options=self._firefox_options)
+        self.driver.get("https://www.linkedin.com/")
+
+        if self.activate_session(self._login):
+            print("Login / session activation successful 🎉")
+        else:
+            raise RuntimeError("Login to LinkedIn unsuccessful 😔")
 
     def activate_session(self, login: str) -> bool:
         cookies_file = os.path.join(self._cache_dir, "linkedin_cookies.pkl")
